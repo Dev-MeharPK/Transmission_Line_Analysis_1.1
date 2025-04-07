@@ -1,6 +1,7 @@
 package com.DevMeharPK.transmissionlineanalysisbymehar;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -18,6 +19,8 @@ public class MainActivity extends AppCompatActivity {
     private TextInputEditText conductorSpacingInput, weightOfConductorInput, spanInput, tensionInput;
     private TextView radiusValue, areaValue, resistanceValue;
     private Button calculateButton;
+
+    private Toast currentToast = null; // Toast tracking variable
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,23 +49,18 @@ public class MainActivity extends AppCompatActivity {
         areaValue = findViewById(R.id.areaValue);
         resistanceValue = findViewById(R.id.resistanceValue);
 
-        // Voltage Dropdown
-        String[] voltageOptions = {"132KV", "500KV"};
-        ArrayAdapter<String> voltageAdapter = new ArrayAdapter<>(this, R.layout.dropdown_item, voltageOptions);
-        voltageSpinner.setAdapter(voltageAdapter);
-        voltageSpinner.setOnClickListener(v -> voltageSpinner.showDropDown());
-        voltageSpinner.setOnItemClickListener((parent, view, position, id) ->
-                Toast.makeText(this, "Voltage: " + voltageOptions[position], Toast.LENGTH_SHORT).show()
-        );
+        // Setup dropdowns
+        setupDropdown(voltageSpinner, new String[]{"132KV", "500KV"}, "Voltage");
+        setupDropdown(weatherConditionSpinner, new String[]{"Sunny", "Stormy"}, "Weather");
 
-        // Conductor Dropdown
+        // Conductor Dropdown with value logic
         String[] conductorOptions = {"Alpha", "Beta"};
         ArrayAdapter<String> conductorAdapter = new ArrayAdapter<>(this, R.layout.dropdown_item, conductorOptions);
         codeOfConductorSpinner.setAdapter(conductorAdapter);
         codeOfConductorSpinner.setOnClickListener(v -> codeOfConductorSpinner.showDropDown());
         codeOfConductorSpinner.setOnItemClickListener((parent, view, position, id) -> {
             String selectedConductor = conductorOptions[position];
-            Toast.makeText(this, "Conductor: " + selectedConductor, Toast.LENGTH_SHORT).show();
+            showToast("Conductor: " + selectedConductor);  // Show toast here
 
             if (selectedConductor.equals("Alpha")) {
                 radiusValue.setText("Radius: 1 cm");
@@ -74,15 +72,6 @@ public class MainActivity extends AppCompatActivity {
                 resistanceValue.setText("Resistance: 2 Ω/km");
             }
         });
-
-        // Weather Condition Dropdown
-        String[] weatherOptions = {"Sunny", "Stormy"};
-        ArrayAdapter<String> weatherAdapter = new ArrayAdapter<>(this, R.layout.dropdown_item, weatherOptions);
-        weatherConditionSpinner.setAdapter(weatherAdapter);
-        weatherConditionSpinner.setOnClickListener(v -> weatherConditionSpinner.showDropDown());
-        weatherConditionSpinner.setOnItemClickListener((parent, view, position, id) ->
-                Toast.makeText(this, "Weather: " + weatherOptions[position], Toast.LENGTH_SHORT).show()
-        );
 
         // Handle Calculate button click
         calculateButton.setOnClickListener(v -> {
@@ -111,23 +100,47 @@ public class MainActivity extends AppCompatActivity {
                 double distAC = Double.parseDouble(distanceACInput.getText().toString().trim());
 
                 if (pfValue < 0 || pfValue > 1) {
-                    Toast.makeText(this, "Power Factor must be between 0 and 1!", Toast.LENGTH_SHORT).show();
+                    showToast("Power Factor must be between 0 and 1!");
                 } else {
-                    Toast.makeText(this, voltageSpinner.getText().toString() + " | " + powerValue + "MW | PF: " + pfValue
-                                    + " | Line: " + lineLength + "km | Conductor: " + codeOfConductorSpinner.getText().toString()
-                                    + " | Weather: " + weatherConditionSpinner.getText().toString()
-                                    + " | Distances: AB=" + distAB + "m, BC=" + distBC + "m, AC=" + distAC + "m",
-                            Toast.LENGTH_LONG).show();
+                    showToast(voltageSpinner.getText().toString() + " | " + powerValue + "MW | PF: " + pfValue
+                            + " | Line: " + lineLength + "km | Conductor: " + codeOfConductorSpinner.getText().toString()
+                            + " | Weather: " + weatherConditionSpinner.getText().toString()
+                            + " | Distances: AB=" + distAB + "m, BC=" + distBC + "m, AC=" + distAC + "m");
                 }
             } catch (NumberFormatException e) {
-                Toast.makeText(this, "Enter valid numbers for numeric fields!", Toast.LENGTH_SHORT).show();
+                showToast("Enter valid numbers for numeric fields!");
             }
         });
     }
 
+    private void showToast(String message) {
+        if (currentToast != null) {
+            currentToast.cancel();  // Cancel the previous Toast
+        }
+
+        currentToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);  // Default duration is SHORT
+        currentToast.show();
+
+        // Use a Handler to cancel the Toast earlier than the default duration
+        new Handler().postDelayed(() -> {
+            if (currentToast != null) {
+                currentToast.cancel();
+            }
+        }, 1000);  // Custom duration (in milliseconds), 1000ms = 1 second
+    }
+
+    private void setupDropdown(AutoCompleteTextView dropdown, String[] options, String label) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.dropdown_item, options);
+        dropdown.setAdapter(adapter);
+        dropdown.setOnClickListener(v -> dropdown.showDropDown());  // Keep this so it works properly
+        dropdown.setOnItemClickListener((parent, view, position, id) ->
+                showToast(label + ": " + options[position])
+        );
+    }
+
     private boolean isFieldEmpty(TextInputEditText inputField, String fieldName) {
         if (inputField.getText().toString().trim().isEmpty()) {
-            Toast.makeText(this, "Please enter " + fieldName + "!", Toast.LENGTH_SHORT).show();
+            showToast("Please enter " + fieldName + "!");
             return true;
         }
         return false;
@@ -135,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isFieldEmpty(AutoCompleteTextView inputField, String fieldName) {
         if (inputField.getText().toString().trim().isEmpty()) {
-            Toast.makeText(this, "Please select " + fieldName + "!", Toast.LENGTH_SHORT).show();
+            showToast("Please select " + fieldName + "!");
             return true;
         }
         return false;
