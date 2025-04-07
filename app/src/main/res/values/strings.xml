@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Transmission Line Analysis 1.0</string>
+    <string-array name="voltage_options">
+        <item>132KV</item>
+        <item>500KV</item>
+    </string-array>
+    <string-array name="conductor_codes">
+        <item>Alpha</item>
+        <item>Beta</item>
+    </string-array>
+</resources>
